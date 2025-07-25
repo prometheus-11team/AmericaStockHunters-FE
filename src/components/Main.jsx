@@ -7,8 +7,10 @@ const Main = () => {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [dateError, setDateError] = useState("");
+  const [submitMessage, setSubmitMessage] = useState("");
+  const [submitStatus, setSubmitStatus] = useState(null); // 'success' or 'error'
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!startDate || !endDate) {
       setDateError("시작일과 종료일을 모두 선택하세요.");
@@ -19,7 +21,32 @@ const Main = () => {
       return;
     }
     setDateError("");
-    // ... 기존 제출 로직 ...
+
+    // 이름, 초기자본 값 가져오기
+    const name = e.target.elements[0].value;
+    const body = {
+      name,
+      initialCapital,
+      startDate,
+      endDate
+    };
+    try {
+      const res = await fetch('/api/v1/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      if (res.ok) {
+        setSubmitMessage('트레이딩이 시작됩니다!');
+        setSubmitStatus('success');
+      } else {
+        setSubmitMessage('요청에 실패했습니다.');
+        setSubmitStatus('error');
+      }
+    } catch (err) {
+      setSubmitMessage('네트워크 오류가 발생했습니다.');
+      setSubmitStatus('error');
+    }
   };
 
   return (
@@ -109,15 +136,21 @@ const Main = () => {
 
               {dateError && (
                 <div style={{ 
-                  color: '#ffa1a1', 
+                  color: '#feb9b9', 
                   marginTop: '8px', 
-                  textAlign: 'center',
-                  backgroundColor: 'rgba(255, 0, 0, 0.2)',
-                  padding: '8px',
-                  borderRadius: '6px' }}>{dateError}</div>
+                  textAlign: 'center', 
+                  }}><b>{dateError}</b></div>
+              )}
+              {submitMessage && (
+                <div style={{ 
+                  color: submitStatus ==='success' ? '#d1ffdb' : '#fed8b9', 
+                  marginTop: '12px', 
+                  textAlign: 'center' 
+                }}><b>{submitMessage}</b>
+                </div>
               )}
 
-              <button className="trading-start-btn">Trading Start !</button>
+              <button className="trading-start-btn">Trading Start </button>
             </form>
           </div>
         </main>
