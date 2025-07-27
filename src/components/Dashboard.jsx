@@ -10,20 +10,34 @@ const Dashboard = () => {
   const [fillPath, setFillPath] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [chartWidth, setChartWidth] = useState(852);
+  const [chartHeight, setChartHeight] = useState(186);
 
   // Zustand store에서 데이터 가져오기
   const result = useTradingStore((state) => state.result);
   const setResult = useTradingStore((state) => state.setResult);
 
+  // 차트 크기 조정 함수
+  const updateChartSize = () => {
+    const container = document.querySelector('.chart-section');
+    if (container) {
+      const containerWidth = container.offsetWidth;
+      // 전체 컨테이너 너비에서 패딩을 제외한 크기 사용
+      const availableWidth = containerWidth - 40; // 좌우 패딩 20px씩 제외 (1vw ≈ 20px)
+      const newWidth = Math.max(500, Math.min(availableWidth, 1600)); // 최대 크기 증가
+      const newHeight = Math.max(200, newWidth * 0.28); // 비율을 28%로 증가하여 더 높게
+      setChartWidth(newWidth);
+      setChartHeight(newHeight);
+    }
+  };
+
   // 차트 데이터를 SVG 경로로 변환하는 함수
   const generateChartPaths = (accountValues) => {
     if (!accountValues || accountValues.length === 0) return { path: "", fillPath: "" };
 
-    const width = 852;
-    const height = 186;
-    const padding = 40;
-    const chartWidth = width - (padding * 2);
-    const chartHeight = height - (padding * 2);
+    const padding = 30; // 40에서 30으로 줄임
+    const chartAreaWidth = chartWidth - (padding * 2);
+    const chartAreaHeight = chartHeight - (padding * 2);
 
     // 최소값과 최대값 계산
     const values = accountValues.map(item => item.account_value);
@@ -32,7 +46,7 @@ const Dashboard = () => {
     const valueRange = maxValue - minValue;
 
     // X축 간격 계산
-    const xStep = chartWidth / (accountValues.length - 1);
+    const xStep = chartAreaWidth / (accountValues.length - 1);
 
     // 경로 생성
     let pathD = "";
@@ -41,11 +55,11 @@ const Dashboard = () => {
     accountValues.forEach((item, index) => {
       const x = padding + (index * xStep);
       const normalizedValue = valueRange === 0 ? 0.5 : (item.account_value - minValue) / valueRange;
-      const y = height - padding - (normalizedValue * chartHeight);
+      const y = chartHeight - padding - (normalizedValue * chartAreaHeight);
 
       if (index === 0) {
         pathD += `M${x} ${y}`;
-        fillD += `M${x} ${height - padding} L${x} ${y}`;
+        fillD += `M${x} ${chartHeight - padding} L${x} ${y}`;
       } else {
         pathD += ` L${x} ${y}`;
         fillD += ` L${x} ${y}`;
@@ -53,20 +67,89 @@ const Dashboard = () => {
     });
 
     // 채우기 경로 완성
-    fillD += ` L${padding + ((accountValues.length - 1) * xStep)} ${height - padding} Z`;
+    fillD += ` L${padding + ((accountValues.length - 1) * xStep)} ${chartHeight - padding} Z`;
 
     return { path: pathD, fillPath: fillD };
   };
 
-  // 월별 라벨 생성
-  const generateMonthLabels = (accountValues) => {
+  // 그리드 라인 생성 함수
+  const generateGridLines = (accountValues) => {
+    if (!accountValues || accountValues.length === 0) return { horizontalLines: [], verticalLines: [] };
+
+    const padding = 30; 
+    const chartAreaWidth = chartWidth - (padding * 2);
+    const chartAreaHeight = chartHeight - (padding * 2);
+
+    // 수평 그리드 라인 (Y축)
+    const values = accountValues.map(item => item.account_value);
+    const minValue = Math.min(...values);
+    const maxValue = Math.max(...values);
+    const valueRange = maxValue - minValue;
+    
+    const horizontalLines = [];
+    const gridLines = 5; // 5개의 수평 그리드 라인
+    
+    for (let i = 0; i <= gridLines; i++) {
+      const y = padding + (i * chartAreaHeight / gridLines);
+      horizontalLines.push({
+        x1: padding,
+        y1: y,
+        x2: chartWidth - padding,
+        y2: y
+      });
+    }
+
+    // 수직 그리드 라인 (X축)
+    const verticalLines = [];
+    const xStep = chartAreaWidth / (accountValues.length - 1);
+    
+    for (let i = 0; i < accountValues.length; i++) {
+      const x = padding + (i * xStep);
+      verticalLines.push({
+        x1: x,
+        y1: padding,
+        x2: x,
+        y2: chartHeight - padding
+      });
+    }
+
+    return { horizontalLines, verticalLines };
+  };
+
+  // X축 레이블 생성 (입력 길이에 따라 전체 기간을 12등분)
+  const generateXAxisLabels = (accountValues) => {
     if (!accountValues || accountValues.length === 0) return [];
     
-    return accountValues.map((item, index) => {
-      const date = new Date(item.date);
-      const month = date.toLocaleDateString('ko-KR', { month: 'short' });
-      return month;
-    });
+    const dataLength = accountValues.length;
+    const maxLabels = 12; // 최대 12개의 레이블
+    const labels = [];
+    
+    if (dataLength <= maxLabels) {
+      // 데이터 포인트가 12개 이하면 모든 포인트 표시
+      for (let i = 0; i < dataLength; i++) {
+        const item = accountValues[i];
+        const date = new Date(item.date);
+        labels.push({
+          text: `${date.getMonth() + 1}/${date.getDate()}`,
+          position: i
+        });
+      }
+    } else {
+      // 데이터 포인트가 12개 초과면 12등분으로 나누어 표시
+      const step = Math.floor(dataLength / (maxLabels - 1));
+      
+      for (let i = 0; i < maxLabels; i++) {
+        const index = i === maxLabels - 1 ? dataLength - 1 : i * step;
+        const item = accountValues[index];
+        const date = new Date(item.date);
+        labels.push({
+          text: `${date.getMonth() + 1}/${date.getDate()}`,
+          position: index
+        });
+      }
+    }
+    
+    return labels;
   };
 
   // 차트 경로 업데이트 함수
@@ -182,6 +265,9 @@ const Dashboard = () => {
   };
 
   useEffect(() => {
+    // 초기 차트 크기 설정
+    updateChartSize();
+    
     // Zustand store에 데이터가 있으면 사용, 없으면 API 호출
     if (result && result.result) {
       updateChartPaths(result.result);
@@ -189,6 +275,19 @@ const Dashboard = () => {
     } else {
       fetchTradingData();
     }
+  }, [result]);
+
+  // 윈도우 리사이즈 시 차트 크기 업데이트
+  useEffect(() => {
+    const handleResize = () => {
+      updateChartSize();
+      if (result && result.result) {
+        updateChartPaths(result.result);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, [result]);
 
   if (loading) {
@@ -240,6 +339,12 @@ const Dashboard = () => {
   const profitRate = tradingData.profit_rate;
   const isPositive = profitRate >= 0;
   const profitRateDisplay = isPositive ? `+${profitRate.toFixed(2)}%` : `${profitRate.toFixed(2)}%`;
+  const xAxisLabels = generateXAxisLabels(tradingData.account_values);
+  const { horizontalLines, verticalLines } = generateGridLines(tradingData.account_values);
+
+  // 소수점 첫째자리 반올림
+  const roundedProfit = Math.round(tradingData.profit * 10) / 10;
+  const roundedFinalAsset = Math.round(tradingData.final_asset * 10) / 10;
 
   return (
     <div className="dashboard-container">
@@ -250,30 +355,31 @@ const Dashboard = () => {
           <div className="metrics-section">
             <div className="metrics-card">
               <div className="card-label">Total Profit/Loss</div>
-              <div className="card-value">${tradingData.profit.toLocaleString()}</div>
+              <div className="card-value">$ {roundedProfit.toLocaleString()}</div>
               <div className={`card-change ${isPositive ? 'positive' : 'negative'}`}>
                 {profitRateDisplay}
               </div>
             </div>
             <div className="metrics-card">
               <div className="card-label">Current Balance</div>
-              <div className="card-value">${tradingData.final_asset.toLocaleString()}</div>
+              <div className="card-value">$ {roundedFinalAsset.toLocaleString()}</div>
               <div className={`card-change ${isPositive ? 'positive' : 'negative'}`}>
-                {isPositive ? '+' : ''}{tradingData.profit.toLocaleString()}
+                {isPositive ? '+' : ''}{roundedProfit.toLocaleString()}
               </div>
             </div>
             <div className="metrics-card">
               <div className="card-label">Sharpe Ratio</div>
               <div className="card-value">{tradingData.sharpe_ratio.toFixed(2)}</div>
-              <div className={`card-change ${tradingData.sharpe_ratio >= 0 ? 'positive' : 'negative'}`}>
+              {/* <div className={`card-change ${tradingData.sharpe_ratio >= 0 ? 'positive' : 'negative'}`}>
                 {tradingData.sharpe_ratio >= 0 ? '+' : ''}{tradingData.sharpe_ratio.toFixed(2)}
-              </div>
+              </div> */}
+              <div style={{ color: '#94ADC7'}}>위험 1단위당 초과수익</div>
             </div>
           </div>
           <div className="chart-section">
             <div className="chart-header">
               <div>
-                <div className="chart-title">Performance Chart</div>
+                <div className="chart-title">Portfolio Value</div>
                 <div className={`chart-percentage ${isPositive ? 'positive' : 'negative'}`}>
                   {profitRateDisplay}
                 </div>
@@ -286,54 +392,135 @@ const Dashboard = () => {
             <div className="chart-visualization">
               <svg
                 className="performance-chart"
-                width="852"
-                height="186"
-                viewBox="0 0 852 186"
+                width={chartWidth}
+                height={chartHeight}
+                viewBox={`0 0 ${chartWidth} ${chartHeight}`}
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"
               >
                 <g clipPath="url(#clip0_15_687)">
+                  {/* 그리드 라인 */}
+                  {horizontalLines.map((line, index) => (
+                    <line
+                      key={`h-${index}`}
+                      x1={line.x1}
+                      y1={line.y1}
+                      x2={line.x2}
+                      y2={line.y2}
+                      stroke="#334d66"
+                      strokeWidth="1"
+                      opacity="0.3"
+                    />
+                  ))}
+                  {verticalLines.map((line, index) => (
+                    <line
+                      key={`v-${index}`}
+                      x1={line.x1}
+                      y1={line.y1}
+                      x2={line.x2}
+                      y2={line.y2}
+                      stroke="#334d66"
+                      strokeWidth="1"
+                      opacity="0.3"
+                    />
+                  ))}
+                  
                   {/* 채우기 영역 */}
                   <path
                     fillRule="evenodd"
                     clipRule="evenodd"
                     d={fillPath}
-                    fill="url(#paint0_linear_15_687)"
+                    fill={isPositive ? "url(#paint0_linear_green)" : "url(#paint0_linear_red)"}
                   />
+                  
                   {/* 라인 차트 */}
                   <path
                     d={chartPath}
-                    stroke="#94ADC7"
+                    stroke="#dce8f5"
                     strokeWidth="3"
                     fill="none"
                   />
                 </g>
                 <defs>
+                  {/* 초록색 그라데이션 (양수) */}
                   <linearGradient
-                    id="paint0_linear_15_687"
+                    id="paint0_linear_green"
                     x1="0"
                     y1="0"
                     x2="0"
-                    y2="186"
+                    y2={chartHeight}
                     gradientUnits="userSpaceOnUse"
                   >
-                    <stop stopColor="#243647" />
+                    <stop stopColor="#3ecf8e" stopOpacity="0.3" />
                     <stop
                       offset="0.5"
-                      stopColor="#243647"
+                      stopColor="#3ecf8e"
+                      stopOpacity="0.1"
+                    />
+                    <stop
+                      offset="1"
+                      stopColor="#3ecf8e"
                       stopOpacity="0"
                     />
                   </linearGradient>
+                  
+                  {/* 빨간색 그라데이션 (음수) */}
+                  <linearGradient
+                    id="paint0_linear_red"
+                    x1="0"
+                    y1="0"
+                    x2="0"
+                    y2={chartHeight}
+                    gradientUnits="userSpaceOnUse"
+                  >
+                    <stop stopColor="#ff6b6b" stopOpacity="0.3" />
+                    <stop
+                      offset="0.5"
+                      stopColor="#ff6b6b"
+                      stopOpacity="0.1"
+                    />
+                    <stop
+                      offset="1"
+                      stopColor="#ff6b6b"
+                      stopOpacity="0"
+                    />
+                  </linearGradient>
+                  
                   <clipPath id="clip0_15_687">
-                    <rect width="852" height="186" fill="white" />
+                    <rect width={chartWidth} height={chartHeight} fill="white" />
                   </clipPath>
                 </defs>
               </svg>
             </div>
-            <div className="chart-months">
-              {generateMonthLabels(tradingData.account_values).map((month, index) => (
-                <span key={index}>{month}</span>
-              ))}
+            <div className="chart-months" style={{ 
+              display: 'flex', 
+              justifyContent: 'space-between',
+              padding: '0 20px',
+              marginTop: '12px'
+            }}>
+              {xAxisLabels.map((label, index) => {
+                const padding = 30;
+                const chartAreaWidth = chartWidth - (padding * 2);
+                const xStep = chartAreaWidth / (tradingData.account_values.length - 1);
+                const xPosition = padding + (label.position * xStep);
+                const percentage = (xPosition / chartWidth) * 100;
+                
+                return (
+                  <span 
+                    key={index} 
+                    style={{ 
+                      position: 'absolute',
+                      left: `${percentage}%`,
+                      transform: 'translateX(-50%)',
+                      color: '#94adc7',
+                      fontSize: '12px',
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
+                    {label.text}
+                  </span>
+                );
+              })}
             </div>
           </div>
           <div className="actions-section">

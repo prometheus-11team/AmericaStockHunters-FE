@@ -323,8 +323,8 @@
 .chart-section {
   background: #243647;
   border-radius: 12px;
-  padding: 2vw;
-  margin-bottom: 2vw;
+  padding: 1.5vw;
+  margin-bottom: 1.5vw;
   width: 100%;
   box-sizing: border-box;
 }
@@ -351,12 +351,16 @@
   align-items: flex-start;
   align-self: stretch;
   position: relative;
+  margin-bottom: 16px;
+  padding: 2;
 }
 
 .chart-title {
   color: #fff;
   font-size: 18px;
   font-weight: 700;
+  margin: 2;
+  padding: 2;
 }
 
 .chart-value {
@@ -365,13 +369,16 @@
   align-items: flex-start;
   align-self: stretch;
   position: relative;
+  margin: 2;
+  padding: 2;
 }
 
 .chart-percentage {
   color: #fff;
   font-size: 32px;
   font-weight: 700;
-  margin-top: 8px;
+  margin: 8px 0 0 0;
+  padding: 0;
 }
 
 .chart-info {
@@ -380,12 +387,15 @@
   gap: 4px;
   align-self: stretch;
   position: relative;
+  margin: 0;
+  padding: 0;
 }
 
 .chart-period {
   color: #94adc7;
   font-size: 16px;
-  margin-top: 4px;
+  margin: 4px 0 0 0;
+  padding: 0;
 }
 
 .chart-period .positive {
@@ -403,14 +413,23 @@
 }
 
 .chart-visualization {
-  margin: 32px 0 0 0;
+  margin: 16px 0 0 0;
+  width: 100%;
+  overflow: hidden;
+  position: relative;
+  min-height: 200px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .performance-chart {
-  height: 186px;
+  width: 100%;
+  height: auto;
   flex-shrink: 0;
   align-self: stretch;
   position: relative;
+  max-width: 100%;
 }
 
 .chart-months {
@@ -418,7 +437,10 @@
   justify-content: space-between;
   color: #94adc7;
   font-size: 15px;
-  margin-top: 16px;
+  margin-top: 12px;
+  position: relative;
+  width: 100%;
+  min-height: 20px;
 }
 
 .month-label {
