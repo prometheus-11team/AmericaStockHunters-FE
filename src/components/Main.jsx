@@ -1,6 +1,9 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import "./Main.css";
 import Header from "./Header";
+import { postTradingRequest } from '../api/tradingApi';
+import useTradingStore from '../store/useTradingStore';
 
 const Main = () => {
   const [initialCapital, setInitialCapital] = useState(100000);
@@ -8,44 +11,50 @@ const Main = () => {
   const [endDate, setEndDate] = useState("");
   const [dateError, setDateError] = useState("");
   const [submitMessage, setSubmitMessage] = useState("");
+  const navigate = useNavigate();
   const [submitStatus, setSubmitStatus] = useState(null); // 'success' or 'error'
 
+  const setResult = useTradingStore((state) => state.setResult);
+  
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     if (!startDate || !endDate) {
       setDateError("시작일과 종료일을 모두 선택하세요.");
       return;
     }
+
     if (startDate >= endDate) {
       setDateError("투자 종료일은 시작일 이후여야 합니다.");
       return;
     }
+
     setDateError("");
 
-    // 이름, 초기자본 값 가져오기
     const name = e.target.elements[0].value;
     const body = {
       name,
       initialCapital,
       startDate,
-      endDate
+      endDate,
     };
+
     try {
-      const res = await fetch('/api/v1/start', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-      });
-      if (res.ok) {
-        setSubmitMessage('트레이딩이 시작됩니다!');
-        setSubmitStatus('success');
+      const result = await postTradingRequest(body);  // axios 요청
+
+      if (result.status === "success") {
+        setResult(result);               // Zustand에 저장
+        navigate("/dashboard");          // 페이지 이동
       } else {
-        setSubmitMessage('요청에 실패했습니다.');
-        setSubmitStatus('error');
+        // 더 명확한 에러 메시지 표시
+        const errorMessage = result.message || "알 수 없는 오류";
+        setSubmitMessage(`요청 실패: ${errorMessage}`);
+        setSubmitStatus("error");
       }
     } catch (err) {
-      setSubmitMessage('네트워크 오류가 발생했습니다.');
-      setSubmitStatus('error');
+      console.error("API 요청 오류:", err);
+      setSubmitMessage("네트워크 오류가 발생했습니다. 백엔드 서버를 확인해주세요.");
+      setSubmitStatus("error");
     }
   };
 
