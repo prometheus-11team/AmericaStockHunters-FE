@@ -1,7 +1,11 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import useTradingStore from "../store/useTradingStore";
 
 const Header = () => {
+  // Zustand store에서 tradingParams 가져오기
+  const tradingParams = useTradingStore((state) => state.tradingParams);
+
   return (
     <header className="header">
       <div className="header-content">
@@ -21,15 +25,27 @@ const Header = () => {
           <nav className="navigation-menu">
             <Link className="nav-item" to="/dashboard">Dashboard</Link>
             <Link className="nav-item" to="/TradingHistory">Trading History</Link>
-            <Link className="nav-item" to="/Intro">Introduction</Link>
             <Link className="nav-item" to="/Overview">Overview</Link>
             <Link className="nav-item" to="/Portfolio">Portfolio</Link>
+            <Link className="nav-item" to="/Intro">Introduction</Link>
           </nav>
-          <img
-            className="user-avatar"
-            src="https://api.builder.io/api/v1/image/assets/TEMP/eb71d8841e2be4901cdc561db634ef4587cd378a?width=80"
-            alt="User Avatar"
-          />
+          <div className="user-section">
+            {tradingParams.name && (
+              <span className="user-name" style={{ 
+                color: '#fff', 
+                marginRight: '12px',
+                fontSize: '14px',
+                fontWeight: '500'
+              }}>
+                {tradingParams.name}
+              </span>
+            )}
+            <img
+              className="user-avatar"
+              src="pm-logo.png"
+              alt="User Avatar"
+            />
+          </div>
         </div>
       </div>
     </header>
