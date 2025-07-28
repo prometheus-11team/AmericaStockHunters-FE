@@ -6,6 +6,9 @@ const useTradingStore = create((set, get) => ({
   // 트레이딩 결과 데이터
   result: null,
   
+  // 거래 내역 데이터
+  tradingHistory: [],
+  
   // UI 상태
   loading: false,
   error: null,
@@ -24,6 +27,8 @@ const useTradingStore = create((set, get) => ({
     loading: false,
     error: null 
   }),
+  
+  setTradingHistory: (history) => set({ tradingHistory: history }),
   
   setLoading: (loading) => set({ loading }),
   
@@ -45,6 +50,7 @@ const useTradingStore = create((set, get) => ({
   
   resetAll: () => set({ 
     result: null,
+    tradingHistory: [],
     loading: false,
     error: null,
     tradingParams: {
@@ -54,6 +60,24 @@ const useTradingStore = create((set, get) => ({
       endDate: ''
     }
   }),
+  
+  // 거래 내역 데이터 처리
+  processTradingHistory: (result) => {
+    if (!result || !result.result || !result.result.transactions) {
+      return [];
+    }
+
+    return result.result.transactions.map((trade, index) => ({
+      datetime: trade.datetime || new Date().toISOString().split('T')[0],
+      asset: trade.symbol || "Unknown",
+      type: trade.type || "Unknown",
+      quantity: trade.quantity || "0",
+      price: trade.price ? `$${trade.price}` : "$0",
+      profitLoss: trade.profitLoss ? 
+        (parseFloat(trade.profitLoss) >= 0 ? `+$${trade.profitLoss}` : `-$${Math.abs(parseFloat(trade.profitLoss))}`) : 
+        null
+    }));
+  },
   
   // 트레이딩 데이터 가져오기 (Main에서 사용)
   fetchTradingData: async (params) => {
@@ -77,8 +101,12 @@ const useTradingStore = create((set, get) => ({
       const result = await postTradingRequest(params);
       
       if (result.status === "success") {
+        // 거래 내역 데이터 처리 및 저장
+        const tradingHistory = get().processTradingHistory(result);
+        
         set({ 
           result,
+          tradingHistory,
           loading: false,
           error: null 
         });

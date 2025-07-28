@@ -121,6 +121,62 @@
   position: relative;
 }
 
+/* Trading History Controls */
+.trading-history-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  margin-bottom: 20px;
+  padding: 16px;
+  background: #fafcff;
+  border-radius: 8px;
+  border: 1px solid #e1e5e9;
+}
+
+.search-filter-container {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.search-input {
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+  width: 250px;
+  background: #fff;
+  color: #21212e;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.filter-select {
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+  background: #fff;
+  color: #21212e;
+  cursor: pointer;
+}
+
+.filter-select:focus {
+  outline: none;
+  border-color: #3b82f6;
+}
+
+.results-info {
+  color: #6b7280;
+  font-size: 14px;
+  font-weight: 500;
+}
+
 /* Table Header */
 .table-header {
   display: flex;
@@ -154,6 +210,23 @@
   text-align: center;
 }
 
+.header-cell.sortable {
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.2s ease;
+  position: relative;
+}
+
+.header-cell.sortable:hover {
+  background-color: rgba(59, 130, 246, 0.1);
+}
+
+.sort-indicator {
+  margin-left: 4px;
+  font-size: 12px;
+  color: #3b82f6;
+}
+
 /* Table Body */
 .table-body {
   display: flex;
@@ -161,6 +234,7 @@
   align-items: flex-start;
   align-self: stretch;
   position: relative;
+  border-radius: 8px;
 }
 
 /* Table Rows */
@@ -303,6 +377,20 @@
     padding: 16px 20px;
   }
 
+  .trading-history-controls {
+    flex-direction: column;
+    gap: 12px;
+    align-items: stretch;
+  }
+
+  .search-filter-container {
+    justify-content: center;
+  }
+
+  .search-input {
+    width: 200px;
+  }
+
   .table-header,
   .table-row {
     gap: 20px;
@@ -318,6 +406,19 @@
 @media (max-width: 768px) {
   .trading-history-container {
     padding: 16px;
+  }
+
+  .trading-history-controls {
+    padding: 12px;
+  }
+
+  .search-filter-container {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .search-input {
+    width: 100%;
   }
 
   .table-header,
