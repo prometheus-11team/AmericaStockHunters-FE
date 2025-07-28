@@ -527,55 +527,47 @@
   position: relative;
 }
 
-/* Portfolio Table Column Widths */
+/* Portfolio Table Column Widths and Alignment */
 .col-symbol {
-  flex-basis: 8%;
-  min-width: 60px;
-  max-width: 120px;
+  flex: 1.0;
   justify-content: flex-start;
   text-align: left;
   font-weight: 700;
   color: #1a1a2e;
 }
+
 .col-qty {
-  flex-basis: 10%;
-  min-width: 60px;
-  max-width: 100px;
-  justify-content: flex-start;
-  text-align: left;
-}
-.col-buy {
-  flex-basis: 13%;
-  min-width: 70px;
-  max-width: 120px;
+  flex: 0.7;
   justify-content: flex-end;
   text-align: right;
 }
+
+.col-avg {
+  flex: 1;
+  justify-content: flex-end;
+  text-align: right;
+}
+
 .col-current {
-  flex-basis: 13%;
-  min-width: 70px;
-  max-width: 120px;
+  flex: 1;
   justify-content: flex-end;
   text-align: right;
 }
+
 .col-profit {
-  flex-basis: 13%;
-  min-width: 70px;
-  max-width: 120px;
+  flex: 1;
   justify-content: flex-end;
   text-align: right;
 }
+
 .col-total {
-  flex-basis: 13%;
-  min-width: 70px;
-  max-width: 120px;
+  flex: 1.2;
   justify-content: flex-end;
   text-align: right;
 }
-.col-daily {
-  flex-basis: 13%;
-  min-width: 70px;
-  max-width: 120px;
+
+.col-profit-amount {
+  flex: 1.2;
   justify-content: flex-end;
   text-align: right;
 }

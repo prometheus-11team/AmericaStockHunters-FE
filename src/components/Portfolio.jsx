@@ -52,7 +52,7 @@ const Portfolio = () => {
                 {/* Portfolio Donut Chart */}
                 <div className="portfolio-chart-widget">
                   <div className="portfolio-widget-title">
-                    포트폴리오 비중 그래프
+                    포트폴리오 비중
                   </div>
                   {pieData.length === 0 ? (
                     <div>포트폴리오 데이터가 없습니다.</div>
