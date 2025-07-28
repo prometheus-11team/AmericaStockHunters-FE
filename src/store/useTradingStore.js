@@ -63,19 +63,18 @@ const useTradingStore = create((set, get) => ({
   
   // 거래 내역 데이터 처리
   processTradingHistory: (result) => {
-    if (!result || !result.result || !result.result.transactions) {
+    if (!result || !result.transactions) {
       return [];
     }
-
-    return result.result.transactions.map((trade, index) => ({
+    return result.transactions.map((trade, index) => ({
       datetime: trade.datetime || new Date().toISOString().split('T')[0],
       asset: trade.symbol || "Unknown",
       type: trade.type || "Unknown",
       quantity: trade.quantity || "0",
       price: trade.price ? `$${trade.price}` : "$0",
-      profitLoss: trade.profitLoss ? 
-        (parseFloat(trade.profitLoss) >= 0 ? `+$${trade.profitLoss}` : `-$${Math.abs(parseFloat(trade.profitLoss))}`) : 
-        null
+      profitLoss: trade.profitLoss != null
+        ? (parseFloat(trade.profitLoss) >= 0 ? `+$${trade.profitLoss}` : `-$${Math.abs(parseFloat(trade.profitLoss))}`)
+        : null
     }));
   },
   
@@ -89,9 +88,9 @@ const useTradingStore = create((set, get) => ({
     }
     
     // 동일한 파라미터로 이미 데이터가 있으면 중복 호출 방지
-    if (state.result && state.result.result) {
+    if (state.result && state.result.transactions && state.result.transactions.length > 0) {
       return { success: true, data: state.result };
-    }
+    }    
     
     const { postTradingRequest } = await import('../api/tradingApi');
     
