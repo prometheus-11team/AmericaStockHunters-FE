@@ -25,19 +25,17 @@ const Header = () => {
           <nav className="navigation-menu">
             <Link className="nav-item" to="/dashboard">Dashboard</Link>
             <Link className="nav-item" to="/TradingHistory">Trading History</Link>
-            <Link className="nav-item" to="/Overview">Overview</Link>
             <Link className="nav-item" to="/Portfolio">Portfolio</Link>
             <Link className="nav-item" to="/Intro">Introduction</Link>
           </nav>
           <div className="user-section">
             {tradingParams.name && (
               <span className="user-name" style={{ 
-                color: '#fff', 
                 marginRight: '12px',
-                fontSize: '14px',
+                fontSize: '15px',
                 fontWeight: '500'
               }}>
-                {tradingParams.name}
+                <b>{tradingParams.name}</b>
               </span>
             )}
             <img

@@ -6,6 +6,7 @@ import { postTradingRequest } from '../api/tradingApi';
 import useTradingStore from '../store/useTradingStore';
 
 const Main = () => {
+  const [name, setName] = useState("");
   const [initialCapital, setInitialCapital] = useState(100000);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -15,9 +16,16 @@ const Main = () => {
   const [submitStatus, setSubmitStatus] = useState(null); // 'success' or 'error'
 
   const setResult = useTradingStore((state) => state.setResult);
+  const setTradingParams = useTradingStore((state) => state.setTradingParams);
   
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!name.trim()) {
+      setSubmitMessage("이름을 입력해주세요.");
+      setSubmitStatus("error");
+      return;
+    }
 
     if (!startDate || !endDate) {
       setDateError("시작일과 종료일을 모두 선택하세요.");
@@ -31,7 +39,9 @@ const Main = () => {
 
     setDateError("");
 
-    const name = e.target.elements[0].value;
+    // 버튼을 눌렀을 때만 Zustand 스토어에 저장
+    setTradingParams({ name });
+
     const body = {
       name,
       initialCapital,
@@ -82,6 +92,8 @@ const Main = () => {
                       type="text"
                       className="form-input"
                       placeholder="Enter your name"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
                     />
                   </div>
                 </div>

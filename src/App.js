@@ -3,7 +3,6 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 
 import Main from './components/Main';
 import Dashboard from './components/Dashboard';
-import Overview from './components/Overview';
 import Portfolio from './components/Portfolio';
 import TradingHistory from './components/TradingHistory';
 import Intro from './components/Intro';
@@ -15,7 +14,6 @@ function App() {
       <Routes>
         <Route path="/" element={<Main />} />
         <Route path="/Dashboard" element={<Dashboard />} />
-        <Route path="/Overview" element={<Overview />} />
         <Route path="/Portfolio" element={<Portfolio />} />
         <Route path="/TradingHistory" element={<TradingHistory />} />
         <Route path="/Intro" element={<Intro />} />

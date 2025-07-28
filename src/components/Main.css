@@ -1,7 +1,7 @@
 :root {
   --primary-bg: #121a21;
   --white: #fff;
-  --border-color: #e5e8eb;
+  --border-color: #94ADC7;
   --input-bg: #243647;
   --placeholder-color: #94adc7;
   --blue-primary: #1a7de5;
@@ -51,7 +51,7 @@
   justify-content: space-between;
   align-items: center;
   align-self: stretch;
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 0.3px solid var(--border-color);
   position: relative;
 }
 
@@ -97,10 +97,10 @@
 .navigation-section {
   display: flex;
   justify-content: flex-end;
-  align-items: flex-start;
-  gap: 32px;
-  flex: 1 0 0;
-  position: relative;
+  align-items: center;
+  flex: 0 1 auto;
+  gap: 24px;
+  padding-left: 400px;
 }
 
 .navigation-menu {
@@ -137,13 +137,13 @@
 }
 
 .user-section {
-  display: flex;
+  display: row-reverse;
   align-items: center;
-  gap: 8px;
+  
 }
 
 .user-name {
-  color: #fff;
+  color: #94ADC7;
   font-size: 14px;
   font-weight: 500;
   white-space: nowrap;
