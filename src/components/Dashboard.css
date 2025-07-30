@@ -421,6 +421,7 @@
   display: flex;
   justify-content: center;
   align-items: center;
+  position: relative;
 }
 
 .performance-chart {
@@ -430,6 +431,10 @@
   align-self: stretch;
   position: relative;
   max-width: 100%;
+}
+
+.performance-chart:hover .chart-point {
+  opacity: 1 !important;
 }
 
 .chart-months {
