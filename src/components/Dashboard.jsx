@@ -12,6 +12,16 @@ const Dashboard = () => {
   const [error, setError] = useState(null);
   const [chartWidth, setChartWidth] = useState(852);
   const [chartHeight, setChartHeight] = useState(186);
+  const [tooltip, setTooltip] = useState({ 
+    show: false, 
+    x: 0, 
+    y: 0, 
+    date: '', 
+    value: 0 
+  });
+  const [dataPoints, setDataPoints] = useState([]); // 데이터 포인트 좌표 저장
+
+
 
   // Zustand store에서 데이터 가져오기
   const result = useTradingStore((state) => state.result);
@@ -51,11 +61,22 @@ const Dashboard = () => {
     // 경로 생성
     let pathD = "";
     let fillD = "";
+    const points = [];
+
 
     accountValues.forEach((item, index) => {
       const x = padding + (index * xStep);
       const normalizedValue = valueRange === 0 ? 0.5 : (item.account_value - minValue) / valueRange;
       const y = chartHeight - padding - (normalizedValue * chartAreaHeight);
+
+      // 데이터 포인트 좌표와 데이터 저장
+      points.push({
+        x,
+        y,
+        date: item.date,
+        value: item.account_value,
+        index
+      });
 
       if (index === 0) {
         pathD += `M${x} ${y}`;
@@ -69,7 +90,49 @@ const Dashboard = () => {
     // 채우기 경로 완성
     fillD += ` L${padding + ((accountValues.length - 1) * xStep)} ${chartHeight - padding} Z`;
 
+    // 데이터 포인트 좌표 저장
+    setDataPoints(points); 
     return { path: pathD, fillPath: fillD };
+  };
+
+  // ===== 마우스 이벤트 핸들러 =====
+  const handleMouseMove = (e) => {
+    if (!dataPoints.length) return;
+
+    const svgRect = e.currentTarget.getBoundingClientRect();
+    const mouseX = e.clientX - svgRect.left;
+    const mouseY = e.clientY - svgRect.top;
+
+    // 가장 가까운 데이터 포인트 찾기
+    let closestPoint = null;
+    let minDistance = Infinity;
+
+    dataPoints.forEach(point => {
+      const distance = Math.abs(point.x - mouseX);
+      if (distance < minDistance) {
+        minDistance = distance;
+        closestPoint = point;
+      }
+    });
+
+    if (closestPoint && minDistance < 30) { // 30px 이내에서만 반응
+      const date = new Date(closestPoint.date);
+      const formattedDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+      
+      setTooltip({
+        show: true,
+        x: e.clientX,
+        y: e.clientY,
+        date: formattedDate,
+        value: closestPoint.value
+      });
+    } else {
+      setTooltip(prev => ({ ...prev, show: false }));
+    }
+  };
+
+  const handleMouseLeave = () => {
+    setTooltip(prev => ({ ...prev, show: false }));
   };
 
   // 그리드 라인 생성 함수
@@ -397,6 +460,9 @@ const Dashboard = () => {
                 viewBox={`0 0 ${chartWidth} ${chartHeight}`}
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"
+                onMouseMove={handleMouseMove}
+                onMouseLeave={handleMouseLeave}
+                style={{ cursor: 'crosshair' }}
               >
                 <g clipPath="url(#clip0_15_687)">
                   {/* 그리드 라인 */}
@@ -440,6 +506,24 @@ const Dashboard = () => {
                     strokeWidth="3"
                     fill="none"
                   />
+                  {/* 데이터 포인트 (호버시 더 잘 보이게) */}
+                  {dataPoints.map((point, index) => (
+                    <circle
+                      key={index}
+                      cx={point.x}
+                      cy={point.y}
+                      r="4"
+                      fill="#dce8f5"
+                      stroke="#fff"
+                      strokeWidth="2"
+                      opacity="0"
+                      style={{ 
+                        transition: 'opacity 0.2s',
+                        pointerEvents: 'none'
+                      }}
+                      className="chart-point"
+                    />
+                  ))}
                 </g>
                 <defs>
                   {/* 초록색 그라데이션 (양수) */}
@@ -523,6 +607,37 @@ const Dashboard = () => {
               })}
             </div>
           </div>
+
+          {/* 툴팁 */}
+          {tooltip.show && (
+            <div
+              style={{
+                position: 'fixed',
+                left: `${tooltip.x + 10}px`,
+                top: `${tooltip.y - 10}px`,
+                backgroundColor: 'rgba(0, 0, 0, 0.9)',
+                color: 'white',
+                padding: '8px 12px',
+                borderRadius: '6px',
+                fontSize: '12px',
+                fontWeight: '500',
+                zIndex: 1000,
+                pointerEvents: 'none',
+                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
+                border: '1px solid rgba(255, 255, 255, 0.1)'
+              }}
+            >
+              <div style={{ marginBottom: '4px' }}>
+                <strong>Date:</strong> {tooltip.date}
+              </div>
+              <div>
+                <strong>Portfolio Value:</strong> ${tooltip.value.toLocaleString(undefined, { 
+                  minimumFractionDigits: 2, 
+                  maximumFractionDigits: 2 
+                })}
+              </div>
+            </div>
+          )}
           <div className="actions-section">
             <button className="start-bot-btn">Start Bot</button>
             <button className="stop-bot-btn">Stop Bot</button>
