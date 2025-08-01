@@ -4,6 +4,7 @@ import "./Dashboard.css";
 import Header from "./Header";
 import { postTradingRequest } from "../api/tradingApi";
 import useTradingStore from "../store/useTradingStore";
+import Papa from 'papaparse';
 
 const Dashboard = () => {
   const [chartPath, setChartPath] = useState("");
@@ -22,79 +23,141 @@ const Dashboard = () => {
   const [dataPoints, setDataPoints] = useState([]); // 데이터 포인트 좌표 저장
   const [hoveredPointIndex, setHoveredPointIndex] = useState(null); // 호버된 포인트 인덱스
 
-
+  const [nasdaqAcc, setNasdaqAcc] = useState([])            // 필터된 기간의 누적 수익률 배열
+  const [nasdaqReturnRate, setNasdaqReturnRate] = useState(0) // 전체 return(%)
 
   // Zustand store에서 데이터 가져오기
   const result = useTradingStore((state) => state.result);
   const setResult = useTradingStore((state) => state.setResult);
 
-  // 차트 크기 조정 함수
+  const nasdaqData = useTradingStore(state => state.nasdaqData);
+  const setNasdaqData = useTradingStore(state => state.setNasdaqData);
+  const tradingParams = useTradingStore(state => state.tradingParams);
+  const getFilteredNasdaqData = useTradingStore(state => state.getFilteredNasdaqData);
+
+  const [nasdaqPath, setNasdaqPath] = useState("");
+  const [nasdaqFillPath, setNasdaqFillPath] = useState("");
+  const [nasdaqLines, setNasdaqLines] = useState({ horizontalLines: [], verticalLines: [] });
+  const { horizontalLines: nh, verticalLines: nv } = nasdaqLines; 
+
+  // 1) CSV 로드
+  useEffect(() => {
+    fetch('/nasdaq_2024_2025.csv')
+      .then(res => res.text())
+      .then(text => {
+        Papa.parse(text, {
+          header: true,
+          skipEmptyLines: true,
+          complete: ({ data }) => {
+            const parsed = data.map(row => ({
+              Date: row.Date,
+              Close: parseFloat(row.Close)
+            }));
+            setNasdaqData(parsed);
+          }
+        });
+      })
+      .catch(err => console.error("CSV 로드 오류:", err));
+  }, [setNasdaqData]);
+
   const updateChartSize = () => {
     const container = document.querySelector('.chart-section');
-    if (container) {
-      const containerWidth = container.offsetWidth;
-      // 전체 컨테이너 너비에서 패딩을 제외한 크기 사용
-      const availableWidth = containerWidth - 40; // 좌우 패딩 20px씩 제외 (1vw ≈ 20px)
-      const newWidth = Math.max(500, Math.min(availableWidth, 1600)); // 최대 크기 증가
-      const newHeight = Math.max(200, newWidth * 0.28); // 비율을 28%로 증가하여 더 높게
-      setChartWidth(newWidth);
-      setChartHeight(newHeight);
-    }
+    if (!container) return;
+    const w = Math.max(500, Math.min(container.offsetWidth - 40, 1600));
+    setChartWidth(w);
+    setChartHeight(Math.max(200, w * 0.28));
   };
 
-  // 차트 데이터를 SVG 경로로 변환하는 함수
-  const generateChartPaths = (accountValues) => {
-    if (!accountValues || accountValues.length === 0) return { path: "", fillPath: "" };
-
-    const padding = 30; // 40에서 30으로 줄임
-    const chartAreaWidth = chartWidth - (padding * 2);
-    const chartAreaHeight = chartHeight - (padding * 2);
-
-    // 최소값과 최대값 계산
-    const values = accountValues.map(item => item.account_value);
-    const minValue = Math.min(...values);
-    const maxValue = Math.max(...values);
-    const valueRange = maxValue - minValue;
-
-    // X축 간격 계산
-    const xStep = chartAreaWidth / (accountValues.length - 1);
-
-    // 경로 생성
-    let pathD = "";
-    let fillD = "";
-    const points = [];
-
-
-    accountValues.forEach((item, index) => {
-      const x = padding + (index * xStep);
-      const normalizedValue = valueRange === 0 ? 0.5 : (item.account_value - minValue) / valueRange;
-      const y = chartHeight - padding - (normalizedValue * chartAreaHeight);
-
-      // 데이터 포인트 좌표와 데이터 저장
-      points.push({
-        x,
-        y,
-        date: item.date,
-        value: item.account_value,
-        index
-      });
-
-      if (index === 0) {
-        pathD += `M${x} ${y}`;
-        fillD += `M${x} ${chartHeight - padding} L${x} ${y}`;
+  // 3) SVG path 생성 함수
+  const generateChartPaths = (values) => {
+    if (!values.length) return { path: "", fillPath: "" };
+    const p = 30, w = chartWidth - p*2, h = chartHeight - p*2;
+    const ys = values.map(v => v.account_value);
+    const min = Math.min(...ys), max = Math.max(...ys), range = max - min || 1;
+    const step = w / (values.length - 1);
+    let d = "", f = "";
+    values.forEach((pt,i) => {
+      const x = p + i*step;
+      const y = chartHeight - p - ((pt.account_value - min)/range)*h;
+      if (i===0) {
+        d = `M${x} ${y}`;
+        f = `M${x} ${chartHeight-p} L${x} ${y}`;
       } else {
-        pathD += ` L${x} ${y}`;
-        fillD += ` L${x} ${y}`;
+        d += ` L${x} ${y}`;
+        f += ` L${x} ${y}`;
       }
     });
-
-    // 채우기 경로 완성
-    fillD += ` L${padding + ((accountValues.length - 1) * xStep)} ${chartHeight - padding} Z`;
-
-    // 데이터 포인트 좌표 저장
-    setDataPoints(points); 
-    return { path: pathD, fillPath: fillD };
+    f += ` L${p + (values.length-1)*step} ${chartHeight-p} Z`;
+    return { path: d, fillPath: f };
   };
+
+  // 차트 크기 조정 함수
+  // const updateChartSize = () => {
+  //   const container = document.querySelector('.chart-section');
+  //   if (container) {
+  //     const containerWidth = container.offsetWidth;
+  //     // 전체 컨테이너 너비에서 패딩을 제외한 크기 사용
+  //     const availableWidth = containerWidth - 40; // 좌우 패딩 20px씩 제외 (1vw ≈ 20px)
+  //     const newWidth = Math.max(500, Math.min(availableWidth, 1600)); // 최대 크기 증가
+  //     const newHeight = Math.max(200, newWidth * 0.28); // 비율을 28%로 증가하여 더 높게
+  //     setChartWidth(newWidth);
+  //     setChartHeight(newHeight);
+  //   }
+  // };
+
+  // // 차트 데이터를 SVG 경로로 변환하는 함수
+  // const generateChartPaths = (accountValues) => {
+  //   if (!accountValues || accountValues.length === 0) return { path: "", fillPath: "" };
+
+  //   const padding = 30; // 40에서 30으로 줄임
+  //   const chartAreaWidth = chartWidth - (padding * 2);
+  //   const chartAreaHeight = chartHeight - (padding * 2);
+
+  //   // 최소값과 최대값 계산
+  //   const values = accountValues.map(item => item.account_value);
+  //   const minValue = Math.min(...values);
+  //   const maxValue = Math.max(...values);
+  //   const valueRange = maxValue - minValue;
+
+  //   // X축 간격 계산
+  //   const xStep = chartAreaWidth / (accountValues.length - 1);
+
+  //   // 경로 생성
+  //   let pathD = "";
+  //   let fillD = "";
+  //   const points = [];
+
+
+  //   accountValues.forEach((item, index) => {
+  //     const x = padding + (index * xStep);
+  //     const normalizedValue = valueRange === 0 ? 0.5 : (item.account_value - minValue) / valueRange;
+  //     const y = chartHeight - padding - (normalizedValue * chartAreaHeight);
+
+  //     // 데이터 포인트 좌표와 데이터 저장
+  //     points.push({
+  //       x,
+  //       y,
+  //       date: item.date,
+  //       value: item.account_value,
+  //       index
+  //     });
+
+  //     if (index === 0) {
+  //       pathD += `M${x} ${y}`;
+  //       fillD += `M${x} ${chartHeight - padding} L${x} ${y}`;
+  //     } else {
+  //       pathD += ` L${x} ${y}`;
+  //       fillD += ` L${x} ${y}`;
+  //     }
+  //   });
+
+  //   // 채우기 경로 완성
+  //   fillD += ` L${padding + ((accountValues.length - 1) * xStep)} ${chartHeight - padding} Z`;
+
+  //   // 데이터 포인트 좌표 저장
+  //   setDataPoints(points); 
+  //   return { path: pathD, fillPath: fillD };
+  // };
 
   // ===== 마우스 이벤트 핸들러 =====
   const handleMouseMove = (e) => {
@@ -142,47 +205,63 @@ const Dashboard = () => {
   };
 
   // 그리드 라인 생성 함수
-  const generateGridLines = (accountValues) => {
-    if (!accountValues || accountValues.length === 0) return { horizontalLines: [], verticalLines: [] };
+  // const generateGridLines = (accountValues) => {
+  //   if (!accountValues || accountValues.length === 0) return { horizontalLines: [], verticalLines: [] };
 
-    const padding = 30; 
-    const chartAreaWidth = chartWidth - (padding * 2);
-    const chartAreaHeight = chartHeight - (padding * 2);
+  //   const padding = 30; 
+  //   const chartAreaWidth = chartWidth - (padding * 2);
+  //   const chartAreaHeight = chartHeight - (padding * 2);
 
-    // 수평 그리드 라인 (Y축)
-    const values = accountValues.map(item => item.account_value);
-    const minValue = Math.min(...values);
-    const maxValue = Math.max(...values);
-    const valueRange = maxValue - minValue;
+  //   // 수평 그리드 라인 (Y축)
+  //   const values = accountValues.map(item => item.account_value);
+  //   const minValue = Math.min(...values);
+  //   const maxValue = Math.max(...values);
+  //   const valueRange = maxValue - minValue;
     
-    const horizontalLines = [];
-    const gridLines = 5; // 5개의 수평 그리드 라인
+  //   const horizontalLines = [];
+  //   const gridLines = 5; // 5개의 수평 그리드 라인
     
-    for (let i = 0; i <= gridLines; i++) {
-      const y = padding + (i * chartAreaHeight / gridLines);
-      horizontalLines.push({
-        x1: padding,
-        y1: y,
-        x2: chartWidth - padding,
-        y2: y
-      });
+  //   for (let i = 0; i <= gridLines; i++) {
+  //     const y = padding + (i * chartAreaHeight / gridLines);
+  //     horizontalLines.push({
+  //       x1: padding,
+  //       y1: y,
+  //       x2: chartWidth - padding,
+  //       y2: y
+  //     });
+  //   }
+
+  //   // 수직 그리드 라인 (X축)
+  //   const verticalLines = [];
+  //   const xStep = chartAreaWidth / (accountValues.length - 1);
+    
+  //   for (let i = 0; i < accountValues.length; i++) {
+  //     const x = padding + (i * xStep);
+  //     verticalLines.push({
+  //       x1: x,
+  //       y1: padding,
+  //       x2: x,
+  //       y2: chartHeight - padding
+  //     });
+  //   }
+
+  //   return { horizontalLines, verticalLines };
+  // };
+
+  const generateGridLines = (values) => {
+    if (!values.length) return { horizontalLines:[], verticalLines:[] };
+    const p = 30, w = chartWidth - p*2, h = chartHeight - p*2;
+    const hLines = [], vLines = [];
+    for (let i=0; i<=5; i++) {
+      const yy = p + (i*h/5);
+      hLines.push({ x1:p, y1:yy, x2:chartWidth-p, y2:yy });
     }
-
-    // 수직 그리드 라인 (X축)
-    const verticalLines = [];
-    const xStep = chartAreaWidth / (accountValues.length - 1);
-    
-    for (let i = 0; i < accountValues.length; i++) {
-      const x = padding + (i * xStep);
-      verticalLines.push({
-        x1: x,
-        y1: padding,
-        x2: x,
-        y2: chartHeight - padding
-      });
-    }
-
-    return { horizontalLines, verticalLines };
+    const step = w/(values.length-1);
+    values.forEach((_,i) => {
+      const xx = p + i*step;
+      vLines.push({ x1:xx, y1:p, x2:xx, y2:chartHeight-p });
+    });
+    return { horizontalLines:hLines, verticalLines:vLines };
   };
 
   // X축 레이블 생성 (입력 길이에 따라 전체 기간을 12등분)
@@ -333,18 +412,90 @@ const Dashboard = () => {
     }
   };
 
-  useEffect(() => {
-    // 초기 차트 크기 설정
-    updateChartSize();
-    
-    // Zustand store에 데이터가 있으면 사용, 없으면 API 호출
-    if (result && result.result) {
-      updateChartPaths(result.result);
-      setLoading(false);
-    } else {
-      fetchTradingData();
-    }
-  }, [result]);
+  // useEffect(() => {
+  //   updateChartSize();
+  //   if (result?.result?.account_values) {
+  //     const { path, fillPath } = generateChartPaths(result.result.account_values);
+  //     setChartPath(path);
+  //     setFillPath(fillPath);
+  //     setLoading(false);
+  //   }
+  // }, [result, chartWidth, chartHeight]);
+
+  // useEffect(() => {
+  //   if (nasdaqData.length >0 && tradingParams.startDate && tradingParams.endDate) {
+  //     const raw = getFilteredNasdaqData(tradingParams.startDate, tradingParams.endDate);
+  //     if (raw.length > 1) {
+  //       const base = raw[0].Close;
+  //       const acc = raw.map(r => ({
+  //         date: r.Date,
+  //         account_value: (r.Close / base) * tradingParams.initialCapital
+  //       }));
+  //       const { path, fillPath } = generateChartPaths(acc);
+  //       setNasdaqPath(path);
+  //       setNasdaqFillPath(fillPath);
+  //       setNasdaqLines(generateGridLines(acc));
+  //     }
+  //   }
+  // }, [nasdaqData, tradingParams, chartWidth, chartHeight]);
+
+    // MAIN useEffect: 리사이즈 + API 호출
+    useEffect(() => {
+      updateChartSize();
+        if (!result?.result) {
+            // 처음 마운트 시에는 API 요청
+            fetchTradingData();
+          } else {
+            // tradingData 객체 전체를 넘겨 주고
+            updateChartPaths(result.result);
+            // 바로 로딩 상태 해제
+            setLoading(false);
+          }
+      window.addEventListener("resize", updateChartSize);
+      return () => window.removeEventListener("resize", updateChartSize);
+    }, [result, chartWidth, chartHeight]);
+  
+    // NASDAQ 차트 경로 업데이트: CSV 데이터 + 필터링
+    useEffect(() => {
+      if (
+        nasdaqData.length > 0 &&
+        tradingParams.startDate &&
+        tradingParams.endDate
+      ) {
+        console.log("▶ 전체 NASDAQ 데이터:", nasdaqData.length, nasdaqData[0], nasdaqData[nasdaqData.length-1]);
+        // 날짜 문자열을 JS Date 객체로 변환
+        const start = new Date(tradingParams.startDate);
+        const end = new Date(tradingParams.endDate);
+        // 해당 기간 데이터만 필터
+        const slice = nasdaqData.filter((row) => {
+          const d = new Date(row.Date);
+          return d >= start && d <= end;
+        });
+
+        console.log("▶ 필터된 구간:", tradingParams.startDate, "~", tradingParams.endDate, "→", slice.length, "개");
+
+        if (slice.length >= 2) {
+          // 기준가 대비 누적 수익률 (initial capital 비례)
+          const base = slice[0].Close;
+          const acc = slice.map((r) => ({
+            date: r.Date,
+            account_value: (r.Close / base) * 100, // 100 단위 수익률
+          }));
+          console.log("▶ 누적 수익률 데이터 예시:", acc.slice(0,3));
+
+          setNasdaqAcc(acc)
+          const last = acc[acc.length - 1].account_value
+          const ret  = last - 100          // 이미 *100 했으니까 100을 빼면 %리턴
+          setNasdaqReturnRate(ret)
+          // 경로 및 그리드 계산
+          const { path, fillPath } = generateChartPaths(acc);
+          console.log("▶ 생성된 path:", path.substring(0,50), "…");
+          setNasdaqPath(path);
+          setNasdaqFillPath(fillPath);
+          setNasdaqLines(generateGridLines(acc));
+        }
+      }
+    }, [nasdaqData, tradingParams, chartWidth, chartHeight]);
 
   // 윈도우 리사이즈 시 차트 크기 업데이트
   useEffect(() => {
@@ -414,6 +565,8 @@ const Dashboard = () => {
   // 소수점 첫째자리 반올림
   const roundedProfit = Math.round(tradingData.profit * 10) / 10;
   const roundedFinalAsset = Math.round(tradingData.final_asset * 10) / 10;
+  const nasdaqDays       = nasdaqAcc.length
+  const nasdaqReturnText = `${nasdaqReturnRate >= 0 ? '+' : ''}${nasdaqReturnRate.toFixed(2)}%`
 
   return (
     <div className="dashboard-container">
@@ -612,6 +765,49 @@ const Dashboard = () => {
               })}
             </div>
           </div>
+          {/* Nasdaq Chart */}
+          <div className="chart-section">
+            <div className="chart-header">
+              <div>
+                <div className="chart-title">Nasdaq Index Returns</div>
+                <div className={`chart-percentage ${nasdaqReturnRate >= 0 ? 'positive' : 'negative'}`}>
+                  {nasdaqReturnText}
+                </div>
+                <div className="chart-period">
+                  Last {nasdaqDays} Days 
+                  <span className={nasdaqReturnRate >= 0 ? 'positive' : 'negative'}>
+                    {' '}{nasdaqReturnText}
+                  </span>
+                </div>
+              </div>
+            </div>
+            <div className="chart-visualization">
+              <svg className="performance-chart" width={chartWidth} height={chartHeight} viewBox={`0 0 ${chartWidth} ${chartHeight}`} fill="none">
+                <g>
+                  {nh.map((ln,i)=><line key={i} {...ln} stroke="#334d66" strokeWidth="1" opacity="0.3"/>)}
+                  {nv.map((ln,i)=><line key={i} {...ln} stroke="#334d66" strokeWidth="1" opacity="0.3"/>)}
+                  <path d={nasdaqFillPath} fill="url(#paint_nasdaq)"/>
+                  <path d={nasdaqPath} stroke="#ffa500" strokeWidth="2" fill="none"/>
+                </g>
+                <defs>
+                  <linearGradient id="paint_nasdaq" x1="0" y1="0" x2="0" y2={chartHeight} gradientUnits="userSpaceOnUse">
+                    <stop stopColor="#ffa500" stopOpacity="0.3"/>
+                    <stop offset="1" stopColor="#ffa500" stopOpacity="0"/>
+                  </linearGradient>
+                </defs>
+              </svg>
+            </div>
+            <div className="chart-months" style={{ display:'flex', justifyContent:'space-between', padding:'0 20px', marginTop:'12px' }}>
+              {/* {generateXAxisLabels(getFilteredNasdaqData(tradingParams.startDate, tradingParams.endDate)) */}
+              {generateXAxisLabels(nasdaqAcc)
+                .map((lbl,i)=>(
+                <span key={i} style={{position:'absolute', left:`${(30 + lbl.position*((chartWidth-60)/(
+                  getFilteredNasdaqData(tradingParams.startDate, tradingParams.endDate).length-1)))/chartWidth*100}%`, transform:'translateX(-50%)',color:'#94adc7',fontSize:'12px',whiteSpace:'nowrap'}}>
+                  {lbl.text}
+                </span>
+              ))}
+            </div>
+          </div>
 
           {/* 툴팁 */}
           {tooltip.show && (
@@ -643,10 +839,7 @@ const Dashboard = () => {
               </div>
             </div>
           )}
-          <div className="actions-section">
-            <button className="start-bot-btn">Start Bot</button>
-            <button className="stop-bot-btn">Stop Bot</button>
-          </div>
+          <div className="chart-period">{tradingParams.startDate} ~ {tradingParams.endDate}</div>
         </main>
       </div>
     </div>

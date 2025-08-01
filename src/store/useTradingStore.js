@@ -20,6 +20,19 @@ const useTradingStore = create((set, get) => ({
     startDate: '',
     endDate: ''
   },
+
+  nasdaqData: [],
+
+  setNasdaqData: (data) => set({ nasdaqData: data }),
+
+  // 필터된 데이터 가져오기
+  getFilteredNasdaqData: (startDate, endDate) => {
+    const { nasdaqData } = get();
+    return nasdaqData.filter((item) => {
+      const date = new Date(item.Date);
+      return date >= new Date(startDate) && date <= new Date(endDate);
+    });
+  },
   
   // Actions
   setResult: (newResult) => set({ 
