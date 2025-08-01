@@ -12,7 +12,7 @@ import Header from "./Header";
 import useTradingStore from "../store/useTradingStore";
 
 const COLORS = [
-  "#00A76A",
+  "#0e7841",
   "#0072E3",
   "#FFB300",
   "#FF5630",

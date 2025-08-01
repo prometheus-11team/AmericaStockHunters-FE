@@ -227,9 +227,10 @@ const TradingHistory = () => {
                     {trade.type}
                   </div>
                   <div className="table-cell quantity-cell">{trade.quantity}</div>
-                  <div className="table-cell price-cell">${trade.price}</div>
-                  <div className={`table-cell profit-cell ${trade.profitLoss ? (parseFloat(trade.profitLoss) >= 0 ? 'profit-positive' : 'profit-negative') : ''}`}>
-                    {trade.profitLoss ? (parseFloat(trade.profitLoss) >= 0 ? `+ $${trade.profitLoss}` : `- $${Math.abs(parseFloat(trade.profitLoss))}`) : '-'}
+                  <div className="table-cell price-cell">$ {trade.price}</div>
+                  <div className={`table-cell profit-cell ${trade.profitLoss ? (parseFloat(trade.profitLoss) >= 0 ? 'profit-positive' : 'profit-negative') : ''}`} >
+                    {/* {trade.profitLoss ? (parseFloat(trade.profitLoss) >= 0 ? `+ $${trade.profitLoss}` : `- $${Math.abs(parseFloat(trade.profitLoss))}`) : '-'} */}
+                    {trade.profitLoss }
                   </div>
                 </div>
               ))}

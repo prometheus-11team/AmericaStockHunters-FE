@@ -67,28 +67,43 @@ const Dashboard = () => {
     setChartHeight(Math.max(200, w * 0.28));
   };
 
-  // 3) SVG path 생성 함수
-  const generateChartPaths = (values) => {
-    if (!values.length) return { path: "", fillPath: "" };
-    const p = 30, w = chartWidth - p*2, h = chartHeight - p*2;
-    const ys = values.map(v => v.account_value);
-    const min = Math.min(...ys), max = Math.max(...ys), range = max - min || 1;
-    const step = w / (values.length - 1);
-    let d = "", f = "";
-    values.forEach((pt,i) => {
-      const x = p + i*step;
-      const y = chartHeight - p - ((pt.account_value - min)/range)*h;
-      if (i===0) {
-        d = `M${x} ${y}`;
-        f = `M${x} ${chartHeight-p} L${x} ${y}`;
-      } else {
-        d += ` L${x} ${y}`;
-        f += ` L${x} ${y}`;
-      }
-    });
-    f += ` L${p + (values.length-1)*step} ${chartHeight-p} Z`;
-    return { path: d, fillPath: f };
-  };
+     // 3) SVG path 생성 함수
+   const generateChartPaths = (values) => {
+     if (!values.length) return { path: "", fillPath: "" };
+     const p = 30, w = chartWidth - p*2, h = chartHeight - p*2;
+     const ys = values.map(v => v.account_value);
+     const min = Math.min(...ys), max = Math.max(...ys), range = max - min || 1;
+     const step = w / (values.length - 1);
+     let d = "", f = "";
+     const points = []; // 데이터 포인트 좌표 저장
+     
+     values.forEach((pt,i) => {
+       const x = p + i*step;
+       const y = chartHeight - p - ((pt.account_value - min)/range)*h;
+       
+       // 데이터 포인트 좌표와 데이터 저장
+       points.push({
+         x,
+         y,
+         date: pt.date,
+         value: pt.account_value,
+         index: i
+       });
+       
+       if (i===0) {
+         d = `M${x} ${y}`;
+         f = `M${x} ${chartHeight-p} L${x} ${y}`;
+       } else {
+         d += ` L${x} ${y}`;
+         f += ` L${x} ${y}`;
+       }
+     });
+     f += ` L${p + (values.length-1)*step} ${chartHeight-p} Z`;
+     
+     // 데이터 포인트 좌표 저장
+     setDataPoints(points);
+     return { path: d, fillPath: f };
+   };
 
   // ===== 마우스 이벤트 핸들러 =====
   const handleMouseMove = (e) => {
@@ -634,16 +649,16 @@ const Dashboard = () => {
           <div className="chart-section">
             <div className="chart-header">
               <div>
-                <div className="chart-title">Nasdaq Index Returns</div>
-                <div className={`chart-percentage ${nasdaqReturnRate >= 0 ? 'positive' : 'negative'}`}>
+                <div className="chart-title" style={{color:'#ffa500'}}>Nasdaq Index Returns</div>
+                <div className={`chart-percentage  ${nasdaqReturnRate >= 0 ? 'positive' : 'negative'}`}>
                   {nasdaqReturnText}
                 </div>
-                <div className="chart-period">
+                {/* <div className="chart-period">
                   Last {nasdaqDays} Days 
                   <span className={nasdaqReturnRate >= 0 ? 'positive' : 'negative'}>
                     {' '}{nasdaqReturnText}
                   </span>
-                </div>
+                </div> */}
               </div>
             </div>
             <div className="chart-visualization">
