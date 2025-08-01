@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-// import { Link } from "react-router-dom";
 import "./Dashboard.css";
 import Header from "./Header";
 import { postTradingRequest } from "../api/tradingApi";
@@ -91,74 +90,6 @@ const Dashboard = () => {
     return { path: d, fillPath: f };
   };
 
-  // 차트 크기 조정 함수
-  // const updateChartSize = () => {
-  //   const container = document.querySelector('.chart-section');
-  //   if (container) {
-  //     const containerWidth = container.offsetWidth;
-  //     // 전체 컨테이너 너비에서 패딩을 제외한 크기 사용
-  //     const availableWidth = containerWidth - 40; // 좌우 패딩 20px씩 제외 (1vw ≈ 20px)
-  //     const newWidth = Math.max(500, Math.min(availableWidth, 1600)); // 최대 크기 증가
-  //     const newHeight = Math.max(200, newWidth * 0.28); // 비율을 28%로 증가하여 더 높게
-  //     setChartWidth(newWidth);
-  //     setChartHeight(newHeight);
-  //   }
-  // };
-
-  // // 차트 데이터를 SVG 경로로 변환하는 함수
-  // const generateChartPaths = (accountValues) => {
-  //   if (!accountValues || accountValues.length === 0) return { path: "", fillPath: "" };
-
-  //   const padding = 30; // 40에서 30으로 줄임
-  //   const chartAreaWidth = chartWidth - (padding * 2);
-  //   const chartAreaHeight = chartHeight - (padding * 2);
-
-  //   // 최소값과 최대값 계산
-  //   const values = accountValues.map(item => item.account_value);
-  //   const minValue = Math.min(...values);
-  //   const maxValue = Math.max(...values);
-  //   const valueRange = maxValue - minValue;
-
-  //   // X축 간격 계산
-  //   const xStep = chartAreaWidth / (accountValues.length - 1);
-
-  //   // 경로 생성
-  //   let pathD = "";
-  //   let fillD = "";
-  //   const points = [];
-
-
-  //   accountValues.forEach((item, index) => {
-  //     const x = padding + (index * xStep);
-  //     const normalizedValue = valueRange === 0 ? 0.5 : (item.account_value - minValue) / valueRange;
-  //     const y = chartHeight - padding - (normalizedValue * chartAreaHeight);
-
-  //     // 데이터 포인트 좌표와 데이터 저장
-  //     points.push({
-  //       x,
-  //       y,
-  //       date: item.date,
-  //       value: item.account_value,
-  //       index
-  //     });
-
-  //     if (index === 0) {
-  //       pathD += `M${x} ${y}`;
-  //       fillD += `M${x} ${chartHeight - padding} L${x} ${y}`;
-  //     } else {
-  //       pathD += ` L${x} ${y}`;
-  //       fillD += ` L${x} ${y}`;
-  //     }
-  //   });
-
-  //   // 채우기 경로 완성
-  //   fillD += ` L${padding + ((accountValues.length - 1) * xStep)} ${chartHeight - padding} Z`;
-
-  //   // 데이터 포인트 좌표 저장
-  //   setDataPoints(points); 
-  //   return { path: pathD, fillPath: fillD };
-  // };
-
   // ===== 마우스 이벤트 핸들러 =====
   const handleMouseMove = (e) => {
     if (!dataPoints.length) return;
@@ -204,49 +135,8 @@ const Dashboard = () => {
     setHoveredPointIndex(null);
   };
 
-  // 그리드 라인 생성 함수
-  // const generateGridLines = (accountValues) => {
-  //   if (!accountValues || accountValues.length === 0) return { horizontalLines: [], verticalLines: [] };
+  
 
-  //   const padding = 30; 
-  //   const chartAreaWidth = chartWidth - (padding * 2);
-  //   const chartAreaHeight = chartHeight - (padding * 2);
-
-  //   // 수평 그리드 라인 (Y축)
-  //   const values = accountValues.map(item => item.account_value);
-  //   const minValue = Math.min(...values);
-  //   const maxValue = Math.max(...values);
-  //   const valueRange = maxValue - minValue;
-    
-  //   const horizontalLines = [];
-  //   const gridLines = 5; // 5개의 수평 그리드 라인
-    
-  //   for (let i = 0; i <= gridLines; i++) {
-  //     const y = padding + (i * chartAreaHeight / gridLines);
-  //     horizontalLines.push({
-  //       x1: padding,
-  //       y1: y,
-  //       x2: chartWidth - padding,
-  //       y2: y
-  //     });
-  //   }
-
-  //   // 수직 그리드 라인 (X축)
-  //   const verticalLines = [];
-  //   const xStep = chartAreaWidth / (accountValues.length - 1);
-    
-  //   for (let i = 0; i < accountValues.length; i++) {
-  //     const x = padding + (i * xStep);
-  //     verticalLines.push({
-  //       x1: x,
-  //       y1: padding,
-  //       x2: x,
-  //       y2: chartHeight - padding
-  //     });
-  //   }
-
-  //   return { horizontalLines, verticalLines };
-  // };
 
   const generateGridLines = (values) => {
     if (!values.length) return { horizontalLines:[], verticalLines:[] };
@@ -412,32 +302,7 @@ const Dashboard = () => {
     }
   };
 
-  // useEffect(() => {
-  //   updateChartSize();
-  //   if (result?.result?.account_values) {
-  //     const { path, fillPath } = generateChartPaths(result.result.account_values);
-  //     setChartPath(path);
-  //     setFillPath(fillPath);
-  //     setLoading(false);
-  //   }
-  // }, [result, chartWidth, chartHeight]);
 
-  // useEffect(() => {
-  //   if (nasdaqData.length >0 && tradingParams.startDate && tradingParams.endDate) {
-  //     const raw = getFilteredNasdaqData(tradingParams.startDate, tradingParams.endDate);
-  //     if (raw.length > 1) {
-  //       const base = raw[0].Close;
-  //       const acc = raw.map(r => ({
-  //         date: r.Date,
-  //         account_value: (r.Close / base) * tradingParams.initialCapital
-  //       }));
-  //       const { path, fillPath } = generateChartPaths(acc);
-  //       setNasdaqPath(path);
-  //       setNasdaqFillPath(fillPath);
-  //       setNasdaqLines(generateGridLines(acc));
-  //     }
-  //   }
-  // }, [nasdaqData, tradingParams, chartWidth, chartHeight]);
 
     // MAIN useEffect: 리사이즈 + API 호출
     useEffect(() => {
