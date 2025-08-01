@@ -40,7 +40,12 @@ const Main = () => {
     setDateError("");
 
     // 버튼을 눌렀을 때만 Zustand 스토어에 저장
-    setTradingParams({ name });
+    setTradingParams({
+      name,
+      initialCapital,
+      startDate,
+      endDate
+    });
 
     const body = {
       name,

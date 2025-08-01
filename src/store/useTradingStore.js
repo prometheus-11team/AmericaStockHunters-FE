@@ -5,7 +5,14 @@ import { create } from 'zustand';
 const useTradingStore = create((set, get) => ({
   // 트레이딩 결과 데이터
   result: null,
-  
+   // ▶ 여기에 기본 빈 객체를 넣어 줍니다.
+  requestParams: {
+    name: "",
+    initialCapital: 0,
+    startDate: "",
+    endDate: ""
+  },
+
   // 거래 내역 데이터
   tradingHistory: [],
   

@@ -14,3 +14,18 @@ export const postTradingRequest = async (requestData) => {
     throw error;
   }
 };
+
+/**
+ * GET /api/v1/nasdaq?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD
+ */
+export const fetchNasdaqData = async ({ startDate, endDate }) => {
+  try {
+    const res = await axios.get('http://localhost:8000/api/v1/nasdaq', {
+      params: { startDate, endDate }
+    });
+    return res.data;
+  } catch (error) {
+    console.error('fetchNasdaqData error:', error.response?.data || error.message);
+    throw error;
+  }
+};
