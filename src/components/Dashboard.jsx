@@ -20,6 +20,7 @@ const Dashboard = () => {
     value: 0 
   });
   const [dataPoints, setDataPoints] = useState([]); // 데이터 포인트 좌표 저장
+  const [hoveredPointIndex, setHoveredPointIndex] = useState(null); // 호버된 포인트 인덱스
 
 
 
@@ -106,12 +107,14 @@ const Dashboard = () => {
     // 가장 가까운 데이터 포인트 찾기
     let closestPoint = null;
     let minDistance = Infinity;
+    let closestIndex = -1;
 
-    dataPoints.forEach(point => {
+    dataPoints.forEach((point, index) => {
       const distance = Math.abs(point.x - mouseX);
       if (distance < minDistance) {
         minDistance = distance;
         closestPoint = point;
+        closestIndex = index;
       }
     });
 
@@ -126,13 +129,16 @@ const Dashboard = () => {
         date: formattedDate,
         value: closestPoint.value
       });
+      setHoveredPointIndex(closestIndex);
     } else {
       setTooltip(prev => ({ ...prev, show: false }));
+      setHoveredPointIndex(null);
     }
   };
 
   const handleMouseLeave = () => {
     setTooltip(prev => ({ ...prev, show: false }));
+    setHoveredPointIndex(null);
   };
 
   // 그리드 라인 생성 함수
@@ -506,24 +512,23 @@ const Dashboard = () => {
                     strokeWidth="3"
                     fill="none"
                   />
-                  {/* 데이터 포인트 (호버시 더 잘 보이게) */}
-                  {dataPoints.map((point, index) => (
+                  {/* 데이터 포인트 (호버된 포인트만 표시) */}
+                  {hoveredPointIndex !== null && dataPoints[hoveredPointIndex] && (
                     <circle
-                      key={index}
-                      cx={point.x}
-                      cy={point.y}
-                      r="4"
-                      fill="#dce8f5"
+                      key={hoveredPointIndex}
+                      cx={dataPoints[hoveredPointIndex].x}
+                      cy={dataPoints[hoveredPointIndex].y}
+                      r="8"
+                      fill="#ff6b6b"
                       stroke="#fff"
-                      strokeWidth="2"
-                      opacity="0"
+                      strokeWidth="3"
                       style={{ 
-                        transition: 'opacity 0.2s',
+                        transition: 'all 0.2s ease',
                         pointerEvents: 'none'
                       }}
                       className="chart-point"
                     />
-                  ))}
+                  )}
                 </g>
                 <defs>
                   {/* 초록색 그라데이션 (양수) */}
